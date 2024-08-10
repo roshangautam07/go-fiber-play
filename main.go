@@ -2,8 +2,9 @@ package main
 
 import (
 	"api/go/dto"
-	"api/go/helper"
+	// "api/go/helper"
 	"api/go/helper/utility"
+	"api/go/middleware/validation"
 	"fmt"
 	"reflect"
 
@@ -17,7 +18,34 @@ import (
 // 	lastName   string
 // 	isMarried  bool
 // }
+// func fun(c *fiber.Ctx) error {
 
+// 	payload := make(map[string]interface{})
+// 	if err := c.BodyParser(&payload); err != nil {
+// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+// 			"error": "Invalid request payload",
+// 		})
+// 	}
+
+// 	// Perform validation
+// 	errors := helper.NewValidationBuilder(payload).
+// 		ValidateRequiredKeys([]string{"id", "firstName", "middleName", "lastName"}).
+// 		// CheckLength([]string{"randomToken"}).
+// 		IsEmptyOrNull().
+// 		IsString([]string{"firstName", "middleName", "lastName"}).
+// 		// IsInt([]string{"id"}).
+// 		Build()
+
+// 	// Check for validation errors
+// 	if len(errors) > 0 {
+// 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": errors})
+
+// 	} else {
+// 		fmt.Println("Validation passed!")
+// 	}
+
+//		return c.Next()
+//	}
 func main() {
 	app := fiber.New()
 	user := dto.Person{
@@ -66,34 +94,7 @@ func main() {
 			return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"person": build}})
 
 		})
-		router.Post("/user", func(c *fiber.Ctx) error {
-
-			payload := make(map[string]interface{})
-			if err := c.BodyParser(&payload); err != nil {
-				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-					"error": "Invalid request payload",
-				})
-			}
-
-			// Perform validation
-			errors := helper.NewValidationBuilder(payload).
-				ValidateRequiredKeys([]string{"id", "firstName", "middleName", "lastName"}).
-				// CheckLength([]string{"randomToken"}).
-				IsEmptyOrNull().
-				IsString([]string{"firstName", "middleName", "lastName"}).
-				// IsInt([]string{"id"}).
-				Build()
-
-			// Check for validation errors
-			if len(errors) > 0 {
-				return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": errors})
-
-			} else {
-				fmt.Println("Validation passed!")
-			}
-
-			return c.Next()
-		}, func(c *fiber.Ctx) error {
+		router.Post("/user", validation.ValidateUser, func(c *fiber.Ctx) error {
 			p := new(dto.User) // Use new to create a pointer to the struct
 
 			if err := c.BodyParser(p); err != nil {
