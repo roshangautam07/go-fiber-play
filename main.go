@@ -13,6 +13,8 @@ import (
 	"reflect"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 // type Person struct {
@@ -69,6 +71,23 @@ func DoneAsync() chan int {
 	}()
 	return r
 }
+func listRoutes(app *fiber.App) []fiber.Route {
+	var routers []fiber.Route
+
+	// Access internal routes information
+	for _, routes := range app.Stack() {
+		for _, route := range routes {
+			// fmt.Println("RRR", route.Path)
+			routers = append(routers, fiber.Route{
+				Method:   route.Method,
+				Path:     route.Path,
+				Handlers: route.Handlers,
+			})
+		}
+
+	}
+	return routers
+}
 func main() {
 	// mux := http.NewServeMux()
 
@@ -82,7 +101,39 @@ func main() {
 	// }
 
 	// fmt.Println("Point your browser to http://localhost:8093/debug/statsviz/")
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		},
+	})
+
+	// Initialize default config
+	app.Use(logger.New())
+	app.Use(logger.New(logger.Config{
+		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
+	}))
+	// Initialize default config
+	app.Use(compress.New())
+
+	// Or extend your config for customization
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelBestSpeed, // 1
+	}))
+
+	// Initialize default config
+	// app.Use(csrf.New())
+
+	// // Or extend your config for customization
+	// app.Use(csrf.New(csrf.Config{
+	// 	KeyLookup:      "header:X-Csrf-Token",
+	// 	CookieName:     "csrf_",
+	// 	CookieSameSite: "Lax",
+	// 	Expiration:     1 * time.Hour,
+	// 	KeyGenerator:   utils.UUIDv4,
+	// }))
+	// Or extend your config for customization
+	// Logging remote IP and Port
+
 	a := dto.Mystruct{}
 	fmt.Println(unsafe.Sizeof(a))
 
@@ -210,7 +261,17 @@ func main() {
 			return c.Status(fiber.StatusOK).JSON(filteredUser)
 		})
 	})
-
+	routes := listRoutes(app)
+	for _, route := range routes {
+		fmt.Println(route.Path, " ", route.Method)
+	}
+	// fmt.Println("ROUTES", routes)
+	app.Use(func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "Route Not founds"})
+	})
+	// app.Use(func(c *fiber.Ctx) error {
+	// 	return c.Status(fiber.StatusMethodNotAllowed).JSON(fiber.Map{"message": "Method Not Allowed"})
+	// })
 	app.Listen(":4000")
 	// log.Fatal(http.ListenAndServe(":8093", mux))
 
