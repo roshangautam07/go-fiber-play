@@ -1,0 +1,46 @@
+1. strings can be nil or not?
+We already have a fundamental knowledge about strings in Golang but a good point to start is Golang strings cannot be nil, unless you use a pointer to strings.
+
+When we creating a string variable as shown below the default value must be empty "". If we initialize it with nil value, we will face with cannot use nil as string value in variable declaration error.
+
+fun main(){
+    var name *string;
+    fmt.Ptintln(name)
+}
+
+output:
+nill
+
+
+However we have to be careful with this approach.
+ Every time we want to assign a value to the name variable we have to write more codes 
+ and also check for a nil or previous value before assigning the new value. 
+ Take a look at this:
+
+fun main(){
+    var name *string;
+
+    temp :="str"
+    name := &temp
+    fmt.Ptintln(*name)
+
+}
+
+output:
+str
+
+
+
+2. strings are immutable
+Strings in Golang are immutable and that means we can not change the value of each characters.
+
+
+3. strings are bytes
+In Golang, strings are made up of bytes (slice of bytes) and some characters need to 
+store in multiple bytes e.g: "♥"
+
+5. strings equality
+We can always use a == to check for simple strings equality in Golang but if there is a hidden spot on our variables we should use unicode norm package to normalize them before comparing two string variables:
+
+6. efficient string building
+Concatenating a large number of strings could be very inefficient. One of the best practices to compose strings efficiently is by using strings.Builder:
