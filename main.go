@@ -74,14 +74,14 @@ func DoneAsync() chan int {
 func listRoutes(app *fiber.App) []fiber.Route {
 	var routers []fiber.Route
 
-	// Access internal routes information
 	for _, routes := range app.Stack() {
 		for _, route := range routes {
-			// fmt.Println("RRR", route.Path)
 			routers = append(routers, fiber.Route{
 				Method:   route.Method,
 				Path:     route.Path,
 				Handlers: route.Handlers,
+				Params:   route.Params,
+				Name:     route.Name,
 			})
 		}
 
