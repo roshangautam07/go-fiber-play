@@ -4,6 +4,7 @@ go 1.22.4
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/arl/statsviz v0.6.0 // indirect
 	github.com/cespare/reflex v0.3.1 // indirect
 	github.com/creack/pty v1.1.11 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
@@ -13,6 +14,7 @@ require (
 	github.com/go-playground/validator/v10 v10.22.0 // indirect
 	github.com/gofiber/fiber/v2 v2.52.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
