@@ -2,6 +2,9 @@ package main
 
 import (
 	"api/go/dto"
+	"encoding/json"
+	"os"
+	"sync"
 	"time"
 	"unicode/utf8"
 	"unsafe"
@@ -15,6 +18,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/sirupsen/logrus"
 )
 
 // type Person struct {
@@ -71,6 +75,52 @@ func DoneAsync() chan int {
 	}()
 	return r
 }
+
+// Function to add log entry to the global slice and write to file
+// func addLogEntry(entry LogEntry) {
+// 	mutex.Lock()
+// 	defer mutex.Unlock()
+
+// 	// Append the new log entry to the slice
+// 	logEntries = append(logEntries, entry)
+
+// 	// Write the entire slice as a JSON array to the file
+// 	writeLogsToFile()
+// }
+
+// // Function to write all log entries to the file as a JSON array
+// func writeLogsToFile() {
+// 	file, err := os.OpenFile("logs.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+// 	if err != nil {
+// 		logrus.Fatalf("Failed to open log file: %v", err)
+// 	}
+// 	defer file.Close()
+
+// 	encoder := json.NewEncoder(file)
+// 	encoder.SetIndent("", "  ") // Pretty-print with indentation
+// 	if err := encoder.Encode(logEntries); err != nil {
+// 		logrus.Fatalf("Failed to write log entries: %v", err)
+// 	}
+// }
+
+// // Function to write log entry to a file
+func writeLogToFile(entry LogEntry) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	// Open the file in append mode
+	file, err := os.OpenFile("logs.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		logrus.Fatalf("Failed to open log file: %v", err)
+	}
+	defer file.Close()
+
+	// Encode log entry to JSON
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(entry); err != nil {
+		logrus.Fatalf("Failed to write log entry: %v", err)
+	}
+}
 func listRoutes(app *fiber.App) []fiber.Route {
 	var routers []fiber.Route
 
@@ -88,6 +138,19 @@ func listRoutes(app *fiber.App) []fiber.Route {
 	}
 	return routers
 }
+
+type LogEntry struct {
+	Time         string                 `json:"time"`
+	Method       string                 `json:"method"`
+	URL          string                 `json:"url"`
+	Request      map[string]interface{} `json:"request"`
+	Response     map[string]interface{} `json:"response"`
+	ResponseTime int64                  `json:"response_time"`
+}
+
+var logEntries []LogEntry
+var mutex sync.Mutex
+
 func main() {
 	// mux := http.NewServeMux()
 
@@ -107,6 +170,54 @@ func main() {
 		},
 	})
 
+	// Initialize logrus
+	// log := logrus.New()
+
+	// // Set log output to a file
+	// file, err := os.OpenFile("logs.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// log.SetOutput(file)
+	// log.SetFormatter(&logrus.JSONFormatter{})
+
+	// Middleware to log request and response
+	app.Use(func(c *fiber.Ctx) error {
+		// Record the start time
+		startTime := time.Now()
+
+		// Capture request data
+		reqData := make(map[string]interface{})
+		reqData["body"] = string(c.Body())
+
+		// Continue to the next handler
+		err := c.Next()
+
+		// Capture response data
+		resData := make(map[string]interface{})
+		resData["status"] = c.Response().StatusCode()
+		resData["body"] = string(c.Response().Body())
+
+		// Calculate response time in milliseconds
+		elapsedTime := time.Since(startTime).Milliseconds()
+		// Create log entry
+		entry := LogEntry{
+			Time:         time.Now().Format(time.RFC3339),
+			Method:       c.Method(),
+			URL:          c.OriginalURL(),
+			Request:      reqData,
+			Response:     resData,
+			ResponseTime: elapsedTime,
+		}
+
+		// Add log entry to the slice in a thread-safe manner
+		mutex.Lock()
+		logEntries = append(logEntries, entry)
+		mutex.Unlock()
+		// Write log entry to file
+		writeLogToFile(entry)
+		return err
+	})
 	// Initialize default config
 	app.Use(logger.New())
 	app.Use(logger.New(logger.Config{
@@ -212,6 +323,7 @@ func main() {
 			//and some characters need to store in multiple bytes e.g: "♥"
 			str := "hss♥"
 			// st := "é"
+			// time.Sleep(5 * time.Second)
 			return c.JSON(fiber.Map{"byte": len(str), "len": utf8.RuneCountInString(str)})
 		})
 		router.Post("/user", validation.ValidateUser, func(c *fiber.Ctx) error {
@@ -272,6 +384,7 @@ func main() {
 	// app.Use(func(c *fiber.Ctx) error {
 	// 	return c.Status(fiber.StatusMethodNotAllowed).JSON(fiber.Map{"message": "Method Not Allowed"})
 	// })
+
 	app.Listen(":4000")
 	// log.Fatal(http.ListenAndServe(":8093", mux))
 
