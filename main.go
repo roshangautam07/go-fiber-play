@@ -329,9 +329,9 @@ func main() {
 		router.Post("/user", validation.ValidateUser, func(c *fiber.Ctx) error {
 			p := new(dto.User) // Use new to create a pointer to the struct
 
-			if err := c.BodyParser(p); err != nil {
-				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-			}
+			// if err := c.BodyParser(p); err != nil {
+			// 	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+			// }
 			fmt.Println(p)
 
 			return c.Status(fiber.StatusOK).JSON(p)
